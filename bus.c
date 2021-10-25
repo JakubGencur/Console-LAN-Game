@@ -1,4 +1,5 @@
 /*gcc bus.c -lnanomsg -o bus*/
+/*./bus node0 ipc:///tmp/node0.ipc ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc & node0=$!*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
