@@ -168,6 +168,11 @@ void vypis_mapu(void) // Vypíše mapu, jak má vypadat
             mvprintw(i, j, "%c", typy_poli[typ].symbol);
         }
     }
+    for(int i=0;i<=pocet_hracu;i++)
+	{
+		attrset(COLOR_PAIR(0b111000));
+		mvprintw(32+i, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+	}
 }
 
 void vycisti_mapu(void) // Vypíše do celé obrazovky mezerníky
@@ -224,7 +229,7 @@ static void obnov_terminal() // Po ukončení smyčky obnoví terminál
 	
 	vycisti_mapu();
 	// -----Odpojí a ukončí program-----
-	sleep(1);
+	sleep(0.1);
 	//pthread_exit(NULL);
 	//pthread_exit(NULL);
 	
@@ -518,9 +523,14 @@ int main(void){
 	pole_init(2, COLOR_MAGENTA, COLOR_RED, 0, '#');
 	
 	// -----Nastaví parametry zadané hráčem------
-	nastaveni_hrace();
-	// hrac_init(0, 1, 2, 'J', 30, 15);
-	// pocet_hracu = 2;
+	// nastaveni_hrace();
+	hrac_init(0, 4, 2, 'J', 5, 5);
+	pocet_hracu = 1;
+	adresar[0][0]=192;
+	adresar[0][1]=168;
+	adresar[0][2]=1;
+	adresar[0][3]=104;
+	
 	noecho(); // Vypne vypisování vstupu z klávesnice
 	
 	// -----Zavede vedlejší vlákna - klávesnice a síťová komunikace-----
@@ -557,6 +567,11 @@ int main(void){
 		
 	}
 	// Čeká na inicializační zprávy ostatních a odesílá je.
+	
+	vycisti_mapu();
+	mvprintw(1,1,"AHOJ-1");
+	refresh();
+	sleep(1);
 	int vsichni_pripojeni=0;
 	for(int i=1;i<=pocet_hracu;i++)
 	{
@@ -571,7 +586,7 @@ int main(void){
 	while(!vsichni_pripojeni)
 	{
 		//Čte, dokud nejsou všichni hráči připojení
-		sleep(0.5);
+		// sleep(0.2);
 		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);// = NULL;
 		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
 		while(recv>=0)
@@ -589,8 +604,8 @@ int main(void){
 					}
 					i++;
 				}
-				mvprintw(33, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-				refresh();
+				// mvprintw(33, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+				// refresh();
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
@@ -601,12 +616,16 @@ int main(void){
 			vsichni_pripojeni*=hraci[i].zije;
 		}
 	}
+	vycisti_mapu();
+	mvprintw(1,1,"AHOJ");
+	refresh();
+	sleep(1);
 	// Pošle pět zpráv, pro případ, že ne všichni je stihli příjmout
-	for(int i=1;i<=5;i++)
+	/*for(int i=1;i<=5;i++)
 	{
 		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);
 		sleep(0.5);
-	}
+	}*/
 	
 	// Proměnné vláken
 	pthread_t vlakno_klavesnice;
@@ -616,6 +635,11 @@ int main(void){
 	pthread_create(&vlakno_klavesnice, NULL, klavesnice, NULL);
 	pthread_create(&vlakno_pripojeni, NULL, pripojeni, NULL);
 	// -----Vlastní hra-----
+	
+	vycisti_mapu();
+	mvprintw(1,1,"AHOJ2");
+	refresh();
+	sleep(1);
 	do {
 		usleep(100000);
 		vycisti_mapu(); // Vyčistí pole k zobrazení
@@ -627,6 +651,10 @@ int main(void){
 				attrset(COLOR_PAIR(hraci[i].barva*8+typy_poli[mapa[hraci[i].souradnice[1]][hraci[i].souradnice[0]]].barva_poz));
 				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%c", hraci[i].symbol);
 			}
+		}
+		for(int i=0;i<=pocet_hracu;i++)
+		{
+			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 		}
 		// Vypíše text mimo pole, aby kurzor v poli nepřekážel
 		attrset(COLOR_PAIR(COLOR_WHITE*POCET_BAREV+COLOR_BLACK));
