@@ -80,7 +80,6 @@ char aktualni_adresa[ZNAKY_IP_ADRESY]; // Proměnná pro ukládání adresy jako
 char zprava[DELKA_ZPRAVY]; // Proměnná pro ukládání zprávy
 char schranka[DELKA_ZPRAVY]; // Proměnná pro příjem zpráv
 int recv = 0; // Proměnná pro ukládání stavu přijímnných zpráv
-int pocitadlo[4] = {0, 0, 0, 0};
 
 char zbrane_nazvy[POCET_ZBRANI][11]={"Nuz", "Puska", "Brokovnice", "Granat"};// Zde jsou uloženy názvy zbraní
 
@@ -220,7 +219,9 @@ void hrac_aktualizuj(char s, char v, char xc, char yc) // Zapíše hodnoty i-té
 		{
 			hraci[i].souradnice[0]=xc;
 			hraci[i].souradnice[1]=yc;
-			hraci[i].vystrel=v;
+			if(v!=0){
+				hraci[i].vystrel=v;
+			}
 		}
 	}
 }
@@ -427,15 +428,15 @@ void *pripojeni(void *)
 {
 	// Připojí se k ostatním počítačům, nastaví spojení
 	
-	/*for(int i;i<pocet_hracu;i++)
+	/*
+	// Zde je část kodu, kterou lze použít pro vytvoření botů
+	for(int i;i<pocet_hracu;i++)
 	{
 		hrac_init(i+1, 0, 2, 'a'+2*i, 30+3*i, 16+3*i);
 	}*/
 	// Získává data od ostaatních počítačů, odesílá vlastní
-	pocitadlo[0] += 1;
 	while(!ukoncit)
 	{
-		pocitadlo[1] += 1;
 		zprava[ID_ZPRAVY] = ZPRAVA_PRUBEH;
 		zprava[ID_HRACE] = hraci[0].symbol;
 		zprava[VYSTREL] = hraci[0].vystrel;
@@ -443,8 +444,7 @@ void *pripojeni(void *)
 		zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
 		/*mvprintw(30, 3, "               ");
 		mvprintw(30, 3, "%d, %d", hraci[0].souradnice[0], hraci[0].souradnice[1]);*/
-		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);// = NULL;
-		pocitadlo[3] += 1;
+		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
 		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
 		{
@@ -452,11 +452,11 @@ void *pripojeni(void *)
 			{
 				hrac_aktualizuj(schranka[ID_HRACE], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
-			pocitadlo[2] += 1;
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		}
 		/*
+		// Zde je smyčka, kterou lze použít pro správu botů
 		for(int i = 1;i<=pocet_hracu;i++)
 		{
 			if(hraci[i].zije)
@@ -488,7 +488,7 @@ void *pripojeni(void *)
 				}
 			}
 		}*/
-		//sleep(0.07);
+		sleep(0.03);
 	}
 }
 
@@ -516,9 +516,9 @@ int main(void){
 		return 2;
 	}
 	start_color();
+	init_paru_barev(); // Nastaví jednotlivé páry barvy textu, pozadí
 	
 	atexit(obnov_terminal); // Po ukončení obnoví terminál, nefunguje při erroru
-	init_paru_barev();
 	
 	// Nastaví, jak budou vypadat jednotlivá pole z mapy
 	pole_init(0, COLOR_GREEN, COLOR_GREEN, 1, ' ');
@@ -553,28 +553,9 @@ int main(void){
 			aktualni_adresa[j]=0;
 		}
 		sprintf(aktualni_adresa, "tcp://%d.%d.%d.%d:%d" , adresar[i][0], adresar[i][1], adresar[i][2], adresar[i][3], PORT);
-		//int l = 0;
-		//int m = nn_connect(socket, aktualni_adresa);
-		//vycisti_mapu();
-		/*while(l<5 && m<0)
-		{
-			//mvprintw(3+l, 3, "K pocitaci %s se nepodarilo pripojit. Zkusim to znovu.", aktualni_adresa);
-			l++;
-			m=*/
 		nn_connect(socket, aktualni_adresa);
-		/*}
-		 m<0 ? mvprintw(8, 3, "Nepodarilo se pripojit k pocitaci %s.", aktualni_adresa):
-		 mvprintw(8, 3, "Připojení na adresu %s proběhlo úspěšně", aktualni_adresa);
-		 refresh();
-		 sleep(2);*/
-		
 	}
 	// Čeká na inicializační zprávy ostatních a odesílá je.
-	
-	vycisti_mapu();
-	mvprintw(1,1,"AHOJ-1");
-	refresh();
-	sleep(1);
 	int vsichni_pripojeni=0;
 	for(int i=1;i<=pocet_hracu;i++)
 	{
@@ -655,10 +636,9 @@ int main(void){
 				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%c", hraci[i].symbol);
 			}
 		}
-		mvprintw(31, 3, "%d, %d, %d, %d", pocitadlo[0], pocitadlo[1], pocitadlo[2], pocitadlo[3]);
 		for(int i=0;i<=pocet_hracu;i++)
 		{
-			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d, %d", i, hraci[i].symbol, hraci[i].zbran, hraci[i].barva, hraci[i].souradnice[1], hraci[i].souradnice[0], hraci[i].vystrel);
+			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d, %d      ", i, hraci[i].symbol, hraci[i].zbran, hraci[i].barva, hraci[i].souradnice[1], hraci[i].souradnice[0], hraci[i].vystrel);
 		}
 		// Vypíše text mimo pole, aby kurzor v poli nepřekážel
 		attrset(COLOR_PAIR(COLOR_WHITE*POCET_BAREV+COLOR_BLACK));
