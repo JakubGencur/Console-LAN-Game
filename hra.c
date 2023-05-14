@@ -589,6 +589,8 @@ int main(void){
 					}
 					i++;
 				}
+				mvprintw(33, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+				refresh();
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
