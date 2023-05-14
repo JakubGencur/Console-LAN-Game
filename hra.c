@@ -78,8 +78,9 @@ char pocet_hracu = 0; // Počet hrajících hráčů
 int vyska=0, sirka=0; // Výška, šířka terminálu
 char aktualni_adresa[ZNAKY_IP_ADRESY]; // Proměnná pro ukládání adresy jako řetězce (nutná pro připojení)
 char zprava[DELKA_ZPRAVY]; // Proměnná pro ukládání zprávy
-char schranka[DELKA_ZPRAVY+1]; // Proměnná pro příjem zpráv
+char schranka[DELKA_ZPRAVY]; // Proměnná pro příjem zpráv
 int recv = 0; // Proměnná pro ukládání stavu přijímnných zpráv
+int pocitadlo[4] = {0, 0, 0, 0};
 
 char zbrane_nazvy[POCET_ZBRANI][11]={"Nuz", "Puska", "Brokovnice", "Granat"};// Zde jsou uloženy názvy zbraní
 
@@ -186,7 +187,7 @@ void vycisti_mapu(void) // Vypíše do celé obrazovky mezerníky
 }
 void umyj_schranku(void)
 {
-	for(int i=0;i<DELKA_ZPRAVY+1;i++)
+	for(int i=0;i<DELKA_ZPRAVY;i++)
 	{
 		schranka[i]=0;
 	}
@@ -431,24 +432,29 @@ void *pripojeni(void *)
 		hrac_init(i+1, 0, 2, 'a'+2*i, 30+3*i, 16+3*i);
 	}*/
 	// Získává data od ostaatních počítačů, odesílá vlastní
-	
+	pocitadlo[0] += 1;
 	while(!ukoncit)
 	{
+		pocitadlo[1] += 1;
 		zprava[ID_ZPRAVY] = ZPRAVA_PRUBEH;
 		zprava[ID_HRACE] = hraci[0].symbol;
 		zprava[VYSTREL] = hraci[0].vystrel;
 		zprava[X_SOURADNICE] = hraci[0].souradnice[0];
 		zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
-		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);// = NULL;
-		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
+		/*mvprintw(30, 3, "               ");
+		mvprintw(30, 3, "%d, %d", hraci[0].souradnice[0], hraci[0].souradnice[1]);*/
+		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);// = NULL;
+		pocitadlo[3] += 1;
+		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
 		{
 			if(schranka[ID_ZPRAVY]==ZPRAVA_PRUBEH)
 			{
 				hrac_aktualizuj(schranka[ID_HRACE], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
+			pocitadlo[2] += 1;
 			umyj_schranku();
-			recv = nn_recv(socket, &schranka, sizeof(&schranka), 0);
+			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		}
 		/*
 		for(int i = 1;i<=pocet_hracu;i++)
@@ -482,7 +488,7 @@ void *pripojeni(void *)
 				}
 			}
 		}*/
-		usleep(70000);
+		//sleep(0.07);
 	}
 }
 
@@ -584,7 +590,7 @@ int main(void){
 	{
 		//Čte, dokud nejsou všichni hráči připojení
 		// sleep(0.2);
-		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);// = NULL;
+		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);// = NULL;
 		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
 		while(recv>=0)
 		{
@@ -620,7 +626,7 @@ int main(void){
 	// Pošle pět zpráv, pro případ, že ne všichni je stihli příjmout
 	/*for(int i=1;i<=5;i++)
 	{
-		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);
+		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
 		sleep(0.5);
 	}*/
 	
@@ -639,7 +645,7 @@ int main(void){
 	sleep(1);
 	do {
 		usleep(100000);
-		vycisti_mapu(); // Vyčistí pole k zobrazení
+		// vycisti_mapu(); // Vyčistí pole k zobrazení
 		vypis_mapu(); // Vypíše hrací pole
 		zkontroluj_vystrely(); // Zkontroluje zabití
 		for(int i=0;i<=pocet_hracu;i++){
@@ -649,9 +655,10 @@ int main(void){
 				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%c", hraci[i].symbol);
 			}
 		}
+		mvprintw(31, 3, "%d, %d, %d, %d", pocitadlo[0], pocitadlo[1], pocitadlo[2], pocitadlo[3]);
 		for(int i=0;i<=pocet_hracu;i++)
 		{
-			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d, %d", i, hraci[i].symbol, hraci[i].zbran, hraci[i].barva, hraci[i].souradnice[1], hraci[i].souradnice[0], hraci[i].vystrel);
 		}
 		// Vypíše text mimo pole, aby kurzor v poli nepřekážel
 		attrset(COLOR_PAIR(COLOR_WHITE*POCET_BAREV+COLOR_BLACK));
