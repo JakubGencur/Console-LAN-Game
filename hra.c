@@ -431,24 +431,21 @@ void *pripojeni(void *)
 		hrac_init(i+1, 0, 2, 'a'+2*i, 30+3*i, 16+3*i);
 	}*/
 	// Získává data od ostaatních počítačů, odesílá vlastní
+	
 	while(!ukoncit)
 	{
+		zprava[ID_ZPRAVY] = ZPRAVA_PRUBEH;
+		zprava[ID_HRACE] = hraci[0].symbol;
+		zprava[VYSTREL] = hraci[0].vystrel;
+		zprava[X_SOURADNICE] = hraci[0].souradnice[0];
+		zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
 		nn_send(socket, &zprava, DELKA_ZPRAVY+1, 0);// = NULL;
 		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
 		while(recv>=0)
 		{
 			if(schranka[ID_ZPRAVY]==ZPRAVA_PRUBEH)
 			{
-				int i=0;
-				while(i<=pocet_hracu && schranka[ID_HRACE] != hraci[i].symbol)
-				{
-					if(!hraci[i].zije)
-					{
-						hraci[i].zije=1;
-						hrac_aktualizuj(schranka[ID_HRACE], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-					}
-					i++;
-				}
+				hrac_aktualizuj(schranka[ID_HRACE], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(&schranka), 0);
@@ -485,7 +482,7 @@ void *pripojeni(void *)
 				}
 			}
 		}*/
-		usleep(100000);
+		usleep(70000);
 	}
 }
 
@@ -604,8 +601,8 @@ int main(void){
 					}
 					i++;
 				}
-				// mvprintw(33, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-				// refresh();
+				mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+				refresh();
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
