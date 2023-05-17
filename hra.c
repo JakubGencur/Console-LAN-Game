@@ -532,7 +532,7 @@ int main(void){
 	adresar[0][0]=192;
 	adresar[0][1]=168;
 	adresar[0][2]=1;
-	adresar[0][3]=104;
+	adresar[0][3]=109;
 	
 	noecho(); // Vypne vypisování vstupu z klávesnice
 	
@@ -575,22 +575,21 @@ int main(void){
 		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
 		while(recv>=0)
 		{
+			int k=1;
+			int i=0;
+			while(k && i<=pocet_hracu && schranka[ID_HRACE] != hraci[i].symbol)
 			{
-				int k=1;
-				int i=0;
-				while(k && i<=pocet_hracu && schranka[ID_HRACE] != hraci[i].symbol)
+				if(!hraci[i].zije)
 				{
-					if(!hraci[i].zije)
-					{
-						hraci[i].zije=1;
-						hrac_init(i, schranka[BARVA], schranka[ZBRAN], schranka[ID_HRACE], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-						k=0;
-					}
-					i++;
+					hraci[i].zije=1;
+					hrac_init(i, schranka[BARVA], schranka[ZBRAN], schranka[ID_HRACE], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+					k=0;
 				}
-				// mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-				// refresh();
+				i++;
 			}
+			mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+			refresh();
+			sleep(1);
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
 		}
