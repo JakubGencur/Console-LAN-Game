@@ -588,8 +588,8 @@ int main(void){
 					}
 					i++;
 				}
-				mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
-				refresh();
+				// mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+				// refresh();
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
@@ -600,10 +600,6 @@ int main(void){
 			vsichni_pripojeni*=hraci[i].zije;
 		}
 	}
-	vycisti_mapu();
-	mvprintw(1,1,"AHOJ");
-	refresh();
-	sleep(1);
 	// Pošle pět zpráv, pro případ, že ne všichni je stihli příjmout
 	/*for(int i=1;i<=5;i++)
 	{
@@ -618,14 +614,10 @@ int main(void){
 	// Vyvoření vláken
 	pthread_create(&vlakno_klavesnice, NULL, klavesnice, NULL);
 	pthread_create(&vlakno_pripojeni, NULL, pripojeni, NULL);
-	// -----Vlastní hra-----
 	
-	vycisti_mapu();
-	mvprintw(1,1,"AHOJ2");
-	refresh();
-	sleep(1);
+	// -----Vlastní hra-----
 	do {
-		usleep(100000);
+		usleep(0.1);
 		// vycisti_mapu(); // Vyčistí pole k zobrazení
 		vypis_mapu(); // Vypíše hrací pole
 		zkontroluj_vystrely(); // Zkontroluje zabití
