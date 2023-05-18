@@ -530,15 +530,15 @@ int main(void){
 	// -----Nastaví parametry zadané hráčem------
 	// nastaveni_hrace();
 	hrac_init(0, 4, 2, 'J', 5, 5);
-	pocet_hracu = 2;
+	pocet_hracu = 1;
 	adresar[0][0]=192;
 	adresar[0][1]=168;
 	adresar[0][2]=1;
-	adresar[0][3]=109;
+	adresar[0][3]=109;/*
 	adresar[1][0]=192;
 	adresar[1][1]=168;
 	adresar[1][2]=1;
-	adresar[1][3]=118;
+	adresar[1][3]=118;*/
 	
 	// noecho(); // Vypne vypisování vstupu z klávesnice
 	
@@ -573,23 +573,14 @@ int main(void){
 	zprava[ZBRAN] = hraci[0].zbran;
 	zprava[X_SOURADNICE] = hraci[0].souradnice[0];
 	zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
-	int poc = 4;
-	mvprintw(poc++, 1, "AHOJ");
-	refresh();
-	sleep(1);
 	while(!vsichni_pripojeni)
 	{
 		//Čte, dokud nejsou všichni hráči připojení
 		// sleep(0.2);
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);// = NULL;
-		recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
-		
-		mvprintw(poc++, 1, "AHOJ-1");
+		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
 		{
-			
-		
-			mvprintw(poc++, 1, "AHOJ-2");
 			if(schranka[ID_ZPRAVY]==ZPRAVA_ZACATEK)
 			{
 				int k=1;
@@ -604,10 +595,9 @@ int main(void){
 					}
 					i++;
 				}
-				mvprintw(3, 1, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
 			umyj_schranku();
-			recv = nn_recv(socket, &schranka, sizeof(schranka), 0);
+			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		}
 		vsichni_pripojeni = 1;
 		for(int i=1;i<pocet_hracu+1;i++)
@@ -616,15 +606,11 @@ int main(void){
 		}
 	}
 	// Pošle pět zpráv, pro případ, že ne všichni je stihli příjmout
-	
-	mvprintw(poc++, 1, "AHOJ3");
 	for(int i=1;i<=5;i++)
 	{
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
 		sleep(0.2);
 	}
-	mvprintw(poc++, 1, "AHOJ4");
-	refresh();
 	sleep(3);
 	// Proměnné vláken
 	pthread_t vlakno_klavesnice;
