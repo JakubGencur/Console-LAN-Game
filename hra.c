@@ -255,10 +255,10 @@ void zkontroluj_vystrely(void) // Zkontroluje zda nějáký hráč vystřelil a 
 {
 	for(int i=0;i<=pocet_hracu;i++)
 	{
-		for(int j;j<=pocet_hracu;j++)
+		for(int j=0;j<=pocet_hracu;j++)
 		{
 			if(hraci[i].vystrel && // Zkontroluje, zda hráč i vytřelil
-			(3+hraci[j].souradnice[0]-hraci[i].souradnice[0]<7 && 3+hraci[j].souradnice[1]-hraci[i].souradnice[1]<7) && // Zda je hráč j v dosahu hráče j (abychom neodkazovali mimo pole zbraní)
+			((DOSAH-1)/2+hraci[j].souradnice[0]-hraci[i].souradnice[0]<DOSAH && (DOSAH-1)/2+hraci[j].souradnice[1]-hraci[i].souradnice[1]<DOSAH) && // Zda je hráč j v dosahu hráče j (abychom neodkazovali mimo pole zbraní)
 			(zbrane
 				[hraci[i].zbran+0] 
 				[(DOSAH-1)/2-hraci[i].souradnice[1]+hraci[j].souradnice[1]]
@@ -611,7 +611,6 @@ int main(void){
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
 		sleep(0.2);
 	}
-	sleep(3);
 	// Proměnné vláken
 	pthread_t vlakno_klavesnice;
 	pthread_t vlakno_pripojeni;
@@ -622,11 +621,10 @@ int main(void){
 	
 	// -----Vlastní hra-----
 	do {
-		sleep(0.1);
+		sleep(2);
 		// vycisti_mapu(); // Vyčistí pole k zobrazení
 		//refresh();
 		vypis_mapu(); // Vypíše hrací pole
-		zkontroluj_vystrely(); // Zkontroluje zabití
 		for(int i=0;i<=pocet_hracu;i++){
 			// Vypíše všechny postavy hráčů
 			if(hraci[i].zije){
@@ -638,11 +636,11 @@ int main(void){
 		{
 			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d, %d      ", i, hraci[i].symbol, hraci[i].zbran, hraci[i].barva, hraci[i].souradnice[1], hraci[i].souradnice[0], hraci[i].vystrel);
 		}
+		zkontroluj_vystrely(); // Zkontroluje zabití
 		// Vypíše text mimo pole, aby kurzor v poli nepřekážel
 		attrset(COLOR_PAIR(0));
 		mvprintw(VYSKA+1, SIRKA+1, " ");
 		refresh();
-		
 	}while(!ukoncit);
 	
 	return EXIT_SUCCESS;
