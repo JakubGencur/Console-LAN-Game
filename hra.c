@@ -231,7 +231,7 @@ static void obnov_terminal() // Po ukončení smyčky obnoví terminál
 	
 	// vycisti_mapu();
 	// -----Odpojí a ukončí program-----
-	sleep(0.1);
+	usleep(100000);
 	//pthread_exit(NULL);
 	//pthread_exit(NULL);
 	
@@ -391,7 +391,7 @@ void *klavesnice(void *) // Obsluha vstupu z klávesnice
 					break;
 				case 'a':
 					hraci[0].vystrel=5;
-					/*attrset(COLOR_PAIR(typy_poli[mapa[hraci[0].souradnice[1]][hraci[0].souradnice[0]-1]].barva_poz));
+					/*attrset(COLOR_PAIR(typy_poli[mapa[hraci[0].souradnice[1]][hraci[0].souradnice[0]-1]].barva_poz)); // Animace výstřelu, zatím pouze návrh
 					mvprintw(hraci[0].souradnice[1], hraci[0].souradnice[0]-1, ".");
 					refresh();
 					usleep(100000);
@@ -489,9 +489,8 @@ void *pripojeni(void *)
 				}
 			}
 		}*/
-		sleep(0.03);
+		usleep(30000);
 	}
-	//return(1);
 }
 
 /*--------------------------------------Main:--------------------------------------------*/
@@ -528,19 +527,20 @@ int main(void){
 	pole_init(2, COLOR_MAGENTA, COLOR_RED, 0, '#');
 	
 	// -----Nastaví parametry zadané hráčem------
-	// nastaveni_hrace();
-	hrac_init(0, 4, 2, 'J', 5, 5);
+	nastaveni_hrace();
+	
+	/*hrac_init(0, 4, 2, 'J', 5, 5); // Pro rychlejší testování je rychlejší se s tím na začátku nevypisovat
 	pocet_hracu = 1;
 	adresar[0][0]=192;
 	adresar[0][1]=168;
 	adresar[0][2]=1;
-	adresar[0][3]=109;/*
+	adresar[0][3]=103;
 	adresar[1][0]=192;
 	adresar[1][1]=168;
 	adresar[1][2]=1;
 	adresar[1][3]=118;*/
 	
-	// noecho(); // Vypne vypisování vstupu z klávesnice
+	noecho(); // Vypne vypisování vstupu z klávesnice
 	
 	// -----Zavede vedlejší vlákna - klávesnice a síťová komunikace-----
 	keypad(stdscr, TRUE);
@@ -550,7 +550,7 @@ int main(void){
 	char localhost[15];
 	sprintf(localhost, "tcp://*:%d", PORT);
 	nn_bind(socket, localhost);
-	sleep(2);
+	sleep(1);
 	// Připojí se k ostatním počítačům
 	for(int i=0;i<pocet_hracu;i++)
 	{
@@ -576,7 +576,7 @@ int main(void){
 	while(!vsichni_pripojeni)
 	{
 		//Čte, dokud nejsou všichni hráči připojení
-		// sleep(0.2);
+		// usleep(200000);
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);// = NULL;
 		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
@@ -609,7 +609,7 @@ int main(void){
 	for(int i=1;i<=5;i++)
 	{
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
-		sleep(0.2);
+		usleep(200000);
 	}
 	// Proměnné vláken
 	pthread_t vlakno_klavesnice;
@@ -621,9 +621,10 @@ int main(void){
 	
 	// -----Vlastní hra-----
 	do {
-		sleep(2);
+		usleep(100000);
 		// vycisti_mapu(); // Vyčistí pole k zobrazení
 		//refresh();
+		zkontroluj_vystrely(); // Zkontroluje zabití
 		vypis_mapu(); // Vypíše hrací pole
 		for(int i=0;i<=pocet_hracu;i++){
 			// Vypíše všechny postavy hráčů
@@ -636,7 +637,6 @@ int main(void){
 		{
 			mvprintw(32+i, 3, "%d, %d, %d, %d, %d, %d, %d      ", i, hraci[i].symbol, hraci[i].zbran, hraci[i].barva, hraci[i].souradnice[1], hraci[i].souradnice[0], hraci[i].vystrel);
 		}
-		zkontroluj_vystrely(); // Zkontroluje zabití
 		// Vypíše text mimo pole, aby kurzor v poli nepřekážel
 		attrset(COLOR_PAIR(0));
 		mvprintw(VYSKA+1, SIRKA+1, " ");
