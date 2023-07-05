@@ -33,30 +33,32 @@
 #define PORT 1234
 // Vlastnosti zprávy
 #define DELKA_ZPRAVY 6
-//   Adresy v rámci zprávy
+// Adresy v rámci zprávy
 #define ID_ZPRAVY 0x0
 #define ZPRAVA_PRUBEH 0x1
 #define ZPRAVA_ZACATEK 0x2
 #define ZPRAVA_KONEC 0x3
 
-#define ID_HRACE 0x1
-#define BARVA 0x2
-#define ZBRAN 0x3
-#define X_SOURADNICE 0x4
-#define Y_SOURADNICE 0x5
+#define ID_HRACE_MSB 0x1
+#define ID_HRACE_LSB 0x2
+#define BARVA 0x3
+#define ZBRAN 0x4
+#define X_SOURADNICE 0x5
+#define Y_SOURADNICE 0x6
 
-#define VYSTREL 0x2
+#define VYSTREL 0x3
 
-#define BODY_1 0x2
-#define BODY_2 0x3
+#define BODY_1 0x3
+#define BODY_2 0x4
 
 typedef struct{
-	char symbol;
+	int symbol;
 	char barva;
 	char souradnice[2];
 	char zbran;
 	char zije;
 	char vystrel;
+	char strela;
 }hrac; // Proměnná hráče
 
 typedef struct
@@ -122,6 +124,17 @@ char zbrane[POCET_ZBRANI][DOSAH][DOSAH]={
 	}
 }; // Zde jsou uloženy dosahy zbraní.
 
+char strela[DOSAH][DOSAH]=
+{
+	{3,3,3,3,3,3,3},
+	{3,2,2,2,2,2,3},
+	{3,2,1,1,1,2,3},
+	{3,2,1,0,1,2,3},
+	{3,2,1,1,1,2,3},
+	{3,2,2,2,2,2,3},
+	{3,3,3,3,3,3,3}
+};
+	
 int mapa[VYSKA+1][SIRKA] = {
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -171,7 +184,7 @@ void vypis_mapu(void) // Vypíše mapu, jak má vypadat
     for(int i=0;i<=pocet_hracu;i++)
 	{
 		attrset(COLOR_PAIR(0b111000));
-		mvprintw(32+i, 3, "%d, %c, %d, %d, %d, %d", schranka[ID_ZPRAVY], schranka[ID_HRACE], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+		mvprintw(32+i, 3, "%d, %lc, %d, %d, %d, %d", schranka[ID_ZPRAVY], (schranka[ID_HRACE_MSB]<<8)+schranka[ID_HRACE_LSB], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 	}
 }
 
@@ -200,7 +213,7 @@ void pole_init(int i, char b, char f, char p, char s) // Zapíše hodnoty i-téh
 	typy_poli[i].symbol=s;    // Symbol pozadí
 }
 
-void hrac_init(int i, char f, char r, char s, char xc, char yc) // Zapíše hodnoty i-tého hráče
+void hrac_init(int i, char f, char r, int s, char xc, char yc) // Zapíše hodnoty i-tého hráče
 {	
 	hraci[i].barva=f;
 	hraci[i].zbran=r;
@@ -209,9 +222,10 @@ void hrac_init(int i, char f, char r, char s, char xc, char yc) // Zapíše hodn
 	hraci[i].souradnice[1]=yc;
 	hraci[i].zije=1;
 	hraci[i].vystrel=0;
+	hraci[i].strela=0;
 }
 
-void hrac_aktualizuj(char s, char v, char xc, char yc) // Zapíše hodnoty i-tého hráče
+void hrac_aktualizuj(int s, char v, char xc, char yc) // Zapíše hodnoty i-tého hráče
 {	
 	for(int i=1;i<=pocet_hracu;i++)
 	{
@@ -244,7 +258,7 @@ static void obnov_terminal() // Po ukončení smyčky obnoví terminál
 
 void init_paru_barev(void) // Initializuje všechny páry barev (pár = barva pozadí + barva popředí)
 {
-	for (int i = 0; i < POCET_BAREV; i++) {
+    for (int i = 0; i < POCET_BAREV; i++) {
         for (int j = 0; j < POCET_BAREV; j++) {
             init_pair(i*POCET_BAREV+j, i, j);
         }
@@ -255,19 +269,46 @@ void zkontroluj_vystrely(void) // Zkontroluje zda nějáký hráč vystřelil a 
 {
 	for(int i=0;i<=pocet_hracu;i++)
 	{
+		if(hraci[i].vystrel && !hraci[i].strela)
+		{
+			hraci[i].strela = 1;
+		}
 		for(int j=0;j<=pocet_hracu;j++)
 		{
-			if(hraci[i].vystrel && // Zkontroluje, zda hráč i vytřelil
+			if(hraci[i].strela && // Zkontroluje, zda hráč i vytřelil
 			((DOSAH-1)/2+hraci[j].souradnice[0]-hraci[i].souradnice[0]<DOSAH && (DOSAH-1)/2+hraci[j].souradnice[1]-hraci[i].souradnice[1]<DOSAH) && // Zda je hráč j v dosahu hráče j (abychom neodkazovali mimo pole zbraní)
 			(zbrane
 				[hraci[i].zbran+0] 
 				[(DOSAH-1)/2-hraci[i].souradnice[1]+hraci[j].souradnice[1]]
 				[(DOSAH-1)/2-hraci[i].souradnice[0]+hraci[j].souradnice[0]]==hraci[i].vystrel) // Zkontroluje zda hráč i hráče j trefil
-			){
+			)
+			{
 				hraci[j].zije=0; // Zabije hráče j
 			}
 		}
-		hraci[i].vystrel = 0; // Ukončí výstřel
+		if(hraci[i].strela)
+		{
+			for(int x_st=0;x_st<DOSAH;x_st++)
+			{
+				for(int y_st=0;y_st<DOSAH;y_st++)
+				{
+					if(
+						zbrane[hraci[i].zbran+0][y_st][x_st]==hraci[i].vystrel 
+						&& strela[y_st][x_st] == hraci[i].strela
+					)
+					{
+						attrset(COLOR_PAIR(typy_poli[mapa[hraci[i].souradnice[1]+y_st-(DOSAH-1)/2][hraci[i].souradnice[0]+x_st-(DOSAH-1)/2]+0].barva_poz));
+						mvprintw(hraci[i].souradnice[1]+y_st-(DOSAH-1)/2, hraci[i].souradnice[0]+x_st-(DOSAH-1)/2, "%c", '.');
+					}
+				}
+			}
+			hraci[i].strela++;
+			hraci[i].strela %= 4;
+			if(!hraci[i].strela)
+			{
+				hraci[i].vystrel = 0;
+			}
+		}
 	}
 }
 
@@ -283,7 +324,7 @@ void nastaveni_hrace(void) // Nastaví hodnoty podle hráčových preferencí:
 		// Symbol hráče (jeho postavy):
 		vycisti_mapu();
 		mvprintw(3, 3,"Napis, jaky chces mit znak (musi byt jiny, nez u dalsich hracu):");
-		scanw("%c", &hraci[0].symbol);
+		scanw("%lc", &hraci[0].symbol);
 		vycisti_mapu();
 		// Barva hráčova symbolu:
 		mvprintw(3, 3,"Napis jakou chces mit barvu (cervena-%d, modra-%d, cerna-%d, bila-%d, magenta-%d, zluta-%d, svetle-modra-%d):", COLOR_RED, COLOR_BLUE, COLOR_BLACK, COLOR_WHITE, COLOR_MAGENTA, COLOR_YELLOW, COLOR_CYAN);
@@ -323,7 +364,7 @@ void nastaveni_hrace(void) // Nastaví hodnoty podle hráčových preferencí:
 		// Vypíše schrnutí a zeptá se hráče, jestli chce s tímto nastavením pokračovat:
 		mvprintw(3, 3, "Tvoje postava:");
 		attrset(COLOR_PAIR(hraci[0].barva*POCET_BAREV));
-		mvprintw(3, 3+15, "%c", hraci[0].symbol);
+		mvprintw(3, 3+15, "%lc", hraci[0].symbol);
 		attrset(COLOR_PAIR(7*POCET_BAREV));
 		mvprintw(4, 5, "Tvoje zbran: %s", zbrane_nazvy[hraci[0].zbran+0]);
 		mvprintw(5, 3, "Zacinas zde: x=%d,y=%d", hraci[0].souradnice[0], hraci[0].souradnice[1]);
@@ -439,7 +480,8 @@ void *pripojeni(void *)
 	while(!ukoncit)
 	{
 		zprava[ID_ZPRAVY] = ZPRAVA_PRUBEH;
-		zprava[ID_HRACE] = hraci[0].symbol;
+		zprava[ID_HRACE_MSB] = hraci[0].symbol >> 8;
+		zprava[ID_HRACE_LSB] = hraci[0].symbol && 0xFF;
 		zprava[VYSTREL] = hraci[0].vystrel;
 		zprava[X_SOURADNICE] = hraci[0].souradnice[0];
 		zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
@@ -451,7 +493,7 @@ void *pripojeni(void *)
 		{
 			if(schranka[ID_ZPRAVY]==ZPRAVA_PRUBEH)
 			{
-				hrac_aktualizuj(schranka[ID_HRACE], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+				hrac_aktualizuj((schranka[ID_HRACE_MSB]<<8) + schranka[ID_HRACE_LSB], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
 			umyj_schranku();
 			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
@@ -492,6 +534,17 @@ void *pripojeni(void *)
 		usleep(30000);
 	}
 }
+
+//void *vystrely(void *) // Obsluha vstupu z klávesnice
+//{
+//	int ch;
+//	do{
+//		zkontroluj_vystrely();
+//
+//		usleep(100000);
+//	}while(!ukoncit);
+//	//return(1);
+//}
 
 /*--------------------------------------Main:--------------------------------------------*/
 
@@ -568,7 +621,8 @@ int main(void){
 		hraci[i].zije=0;
 	}
 	zprava[ID_ZPRAVY] = ZPRAVA_ZACATEK;
-	zprava[ID_HRACE] = hraci[0].symbol;
+	zprava[ID_HRACE_MSB] = hraci[0].symbol >> 8;
+	zprava[ID_HRACE_LSB] = hraci[0].symbol && 0xFF;
 	zprava[BARVA] = hraci[0].barva;
 	zprava[ZBRAN] = hraci[0].zbran;
 	zprava[X_SOURADNICE] = hraci[0].souradnice[0];
@@ -585,12 +639,12 @@ int main(void){
 			{
 				int k=1;
 				int i=0;
-				while(k && i<=pocet_hracu && schranka[ID_HRACE] != hraci[i].symbol)
+				while(k && i<=pocet_hracu && ((schranka[ID_HRACE_MSB]<<8) + schranka[ID_HRACE_LSB]) != hraci[i].symbol)
 				{
 					if(!hraci[i].zije)
 					{
 						hraci[i].zije=1;
-						hrac_init(i, schranka[BARVA], schranka[ZBRAN], schranka[ID_HRACE], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
+						hrac_init(i, schranka[BARVA], schranka[ZBRAN], (schranka[ID_HRACE_MSB]<<8) + schranka[ID_HRACE_LSB], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 						k=0;
 					}
 					i++;
@@ -614,23 +668,25 @@ int main(void){
 	// Proměnné vláken
 	pthread_t vlakno_klavesnice;
 	pthread_t vlakno_pripojeni;
+	//pthread_t vlakno_vystrely;
 	
 	// Vyvoření vláken
 	pthread_create(&vlakno_klavesnice, NULL, klavesnice, NULL);
 	pthread_create(&vlakno_pripojeni, NULL, pripojeni, NULL);
+	//pthread_create(&vlakno_vystrely, NULL, vystrely, NULL);
 	
 	// -----Vlastní hra-----
 	do {
 		usleep(100000);
 		// vycisti_mapu(); // Vyčistí pole k zobrazení
 		//refresh();
-		zkontroluj_vystrely(); // Zkontroluje zabití
 		vypis_mapu(); // Vypíše hrací pole
+		zkontroluj_vystrely(); // Zkontroluje zabití
 		for(int i=0;i<=pocet_hracu;i++){
 			// Vypíše všechny postavy hráčů
 			if(hraci[i].zije){
 				attrset(COLOR_PAIR(hraci[i].barva*8+typy_poli[mapa[hraci[i].souradnice[1]+0][hraci[i].souradnice[0]+0]+0].barva_poz));
-				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%c", hraci[i].symbol);
+				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%lc", hraci[i].symbol);
 			}
 		}
 		for(int i=0;i<=pocet_hracu;i++)
