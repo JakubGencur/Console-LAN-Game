@@ -32,7 +32,7 @@
 #define ZNAKY_IP_ADRESY 27
 #define PORT 1234
 // Vlastnosti zprávy
-#define DELKA_ZPRAVY 6
+#define DELKA_ZPRAVY 7
 // Adresy v rámci zprávy
 #define ID_ZPRAVY 0x0
 #define ZPRAVA_PRUBEH 0x1
@@ -183,7 +183,7 @@ void vypis_mapu(void) // Vypíše mapu, jak má vypadat
     }
     for(int i=0;i<=pocet_hracu;i++)
 	{
-		attrset(COLOR_PAIR(0b111000));
+		attrset(COLOR_PAIR(56));
 		mvprintw(32+i, 3, "%d, %lc, %d, %d, %d, %d", schranka[ID_ZPRAVY], (schranka[ID_HRACE_MSB]<<8)+schranka[ID_HRACE_LSB], schranka[BARVA], schranka[ZBRAN], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 	}
 }
@@ -324,7 +324,11 @@ void nastaveni_hrace(void) // Nastaví hodnoty podle hráčových preferencí:
 		// Symbol hráče (jeho postavy):
 		vycisti_mapu();
 		mvprintw(3, 3,"Napis, jaky chces mit znak (musi byt jiny, nez u dalsich hracu):");
+//#ifdef UNICODE_ENABLED 
 		scanw("%lc", &hraci[0].symbol);
+//#else
+//		scanw("%c", &hraci[0].symbol);
+//#endif		
 		vycisti_mapu();
 		// Barva hráčova symbolu:
 		mvprintw(3, 3,"Napis jakou chces mit barvu (cervena-%d, modra-%d, cerna-%d, bila-%d, magenta-%d, zluta-%d, svetle-modra-%d):", COLOR_RED, COLOR_BLUE, COLOR_BLACK, COLOR_WHITE, COLOR_MAGENTA, COLOR_YELLOW, COLOR_CYAN);
@@ -364,7 +368,11 @@ void nastaveni_hrace(void) // Nastaví hodnoty podle hráčových preferencí:
 		// Vypíše schrnutí a zeptá se hráče, jestli chce s tímto nastavením pokračovat:
 		mvprintw(3, 3, "Tvoje postava:");
 		attrset(COLOR_PAIR(hraci[0].barva*POCET_BAREV));
+//#ifdef UNICODE_ENABLED 
 		mvprintw(3, 3+15, "%lc", hraci[0].symbol);
+//#else
+//		mvprintw(3, 3+15, "%c", hraci[0].symbol);
+//#endif		
 		attrset(COLOR_PAIR(7*POCET_BAREV));
 		mvprintw(4, 5, "Tvoje zbran: %s", zbrane_nazvy[hraci[0].zbran+0]);
 		mvprintw(5, 3, "Zacinas zde: x=%d,y=%d", hraci[0].souradnice[0], hraci[0].souradnice[1]);
@@ -480,14 +488,19 @@ void *pripojeni(void *)
 	while(!ukoncit)
 	{
 		zprava[ID_ZPRAVY] = ZPRAVA_PRUBEH;
-		zprava[ID_HRACE_MSB] = hraci[0].symbol >> 8;
-		zprava[ID_HRACE_LSB] = hraci[0].symbol && 0xFF;
+		zprava[ID_HRACE_MSB] = (hraci[0].symbol >> 8) & 0xFF;
+		zprava[ID_HRACE_LSB] = hraci[0].symbol & 0xFF;
 		zprava[VYSTREL] = hraci[0].vystrel;
 		zprava[X_SOURADNICE] = hraci[0].souradnice[0];
 		zprava[Y_SOURADNICE] = hraci[0].souradnice[1];
 		/*mvprintw(30, 3, "               ");
 		mvprintw(30, 3, "%d, %d", hraci[0].souradnice[0], hraci[0].souradnice[1]);*/
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
+		attrset(COLOR_PAIR(8));
+		for(int b=0;b<DELKA_ZPRAVY; b++)
+		{
+			mvprintw(35, 5*b, "%d", schranka[b]);
+		}
 		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
 		{
@@ -496,6 +509,10 @@ void *pripojeni(void *)
 				hrac_aktualizuj((schranka[ID_HRACE_MSB]<<8) + schranka[ID_HRACE_LSB], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
 			umyj_schranku();
+			for(int b=0;b<DELKA_ZPRAVY; b++)
+			{
+				mvprintw(36, 5*b, "%d", schranka[b]);
+			}
 			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		}
 		/*
@@ -622,7 +639,7 @@ int main(void){
 	}
 	zprava[ID_ZPRAVY] = ZPRAVA_ZACATEK;
 	zprava[ID_HRACE_MSB] = hraci[0].symbol >> 8;
-	zprava[ID_HRACE_LSB] = hraci[0].symbol && 0xFF;
+	zprava[ID_HRACE_LSB] = hraci[0].symbol & 0xFF;
 	zprava[BARVA] = hraci[0].barva;
 	zprava[ZBRAN] = hraci[0].zbran;
 	zprava[X_SOURADNICE] = hraci[0].souradnice[0];
@@ -686,7 +703,11 @@ int main(void){
 			// Vypíše všechny postavy hráčů
 			if(hraci[i].zije){
 				attrset(COLOR_PAIR(hraci[i].barva*8+typy_poli[mapa[hraci[i].souradnice[1]+0][hraci[i].souradnice[0]+0]+0].barva_poz));
+//#ifdef UNICODE_ENABLED 
 				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%lc", hraci[i].symbol);
+//#else
+//				mvprintw(hraci[i].souradnice[1], hraci[i].souradnice[0], "%c", hraci[i].symbol);
+//#endif		
 			}
 		}
 		for(int i=0;i<=pocet_hracu;i++)
