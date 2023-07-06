@@ -497,10 +497,10 @@ void *pripojeni(void *)
 		mvprintw(30, 3, "%d, %d", hraci[0].souradnice[0], hraci[0].souradnice[1]);*/
 		nn_send(socket, &zprava, DELKA_ZPRAVY, 0);
 		attrset(COLOR_PAIR(8));
-		for(int b=0;b<DELKA_ZPRAVY; b++)
-		{
-			mvprintw(35, 5*b, "%d", schranka[b]);
-		}
+//		for(int b=0;b<DELKA_ZPRAVY; b++)
+//		{
+//			mvprintw(35, 5*b, "%d", schranka[b]);
+//		}
 		recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		while(recv>=0)
 		{
@@ -509,10 +509,10 @@ void *pripojeni(void *)
 				hrac_aktualizuj((schranka[ID_HRACE_MSB]<<8) + schranka[ID_HRACE_LSB], schranka[VYSTREL], schranka[X_SOURADNICE], schranka[Y_SOURADNICE]);
 			}
 			umyj_schranku();
-			for(int b=0;b<DELKA_ZPRAVY; b++)
-			{
-				mvprintw(36, 5*b, "%d", schranka[b]);
-			}
+//			for(int b=0;b<DELKA_ZPRAVY; b++)
+//			{
+//				mvprintw(36, 5*b, "%d", schranka[b]);
+//			}
 			recv = nn_recv(socket, &schranka, sizeof(schranka), NN_DONTWAIT);
 		}
 		/*
